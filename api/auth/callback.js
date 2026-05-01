@@ -32,6 +32,6 @@ export default async function handler(req, res) {
     res.end();
   } catch (error) {
     console.error(error);
-    res.status(500).send("Unable to complete Shopify authorization.");
+    res.status(500).send(`Unable to complete Shopify authorization: ${error.message}`);
   }
 }
