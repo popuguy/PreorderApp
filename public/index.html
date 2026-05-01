@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shopify Preorder App</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Shopify Preorder App</h1>
+      <p>Connect your Shopify store to manage preorder listings by adding or removing the <strong>preorder</strong> tag.</p>
+      <form id="shop-form" class="card">
+        <label for="shop">Shop domain</label>
+        <input id="shop" name="shop" placeholder="your-shop.myshopify.com" required />
+        <button type="submit">Connect store</button>
+      </form>
+      <p class="hint">After installing, you can manage preorder tags from the app dashboard.</p>
+    </main>
+    <script>
+      document.getElementById("shop-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const shop = document.getElementById("shop").value.trim();
+        if (!shop) return;
+        window.location.href = `/auth?shop=${encodeURIComponent(shop)}`;
+      });
+    </script>
+  </body>
+</html>
