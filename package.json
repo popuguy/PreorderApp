@@ -10,7 +10,7 @@
     "dev": "vercel dev --listen 3000"
   },
   "dependencies": {
-    "@vercel/kv": "^3.0.0",
+    "@upstash/redis": "^1.36.4",
     "dotenv": "^16.0.0",
     "iron-session": "^8.0.4"
   }

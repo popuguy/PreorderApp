@@ -36,7 +36,10 @@ http://localhost:3000
 ### Deploying on Vercel
 
 - Add the same environment variables on Vercel.
-- If you want persistence in production, add Vercel KV to your project and set the `VERCEL_KV_URL` value.
+- In production, you must add an Upstash Redis integration or use the Vercel KV/Upstash integration.
+  - Set either `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+  - or `KV_REST_API_URL` + `KV_REST_API_TOKEN`
+  - Without one of these Redis credential sets, production token storage on Vercel serverless functions will fail.
 - Set `HOST` to your Vercel app URL, for example `https://your-app.vercel.app`.
 - In Shopify Partner, use that URL for the App URL and `https://your-app.vercel.app/auth/callback` for the redirect URI.
 
