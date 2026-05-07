@@ -30,9 +30,17 @@
     return window.Shopify?.shop || null;
   }
 
+  function logDebug(message, data) {
+    if (window.console && window.console.log) {
+      window.console.log(`[preorder-script] ${message}`, data || "");
+    }
+  }
+
   async function checkPreorderStatus(productId) {
     const appOrigin = await getAppOrigin();
     const shop = getShopFromScript();
+    logDebug('Checking preorder status', {productId, appOrigin, shop});
+
     if (!appOrigin || !shop) {
       console.error('Missing app origin or shop in preorder script.', {appOrigin, shop});
       return false;
@@ -41,10 +49,12 @@
     try {
       const response = await fetch(`${appOrigin}/api/preorder-status?id=${encodeURIComponent(productId)}&shop=${encodeURIComponent(shop)}`);
       if (!response.ok) {
-        console.error('Preorder status fetch failed:', response.status, await response.text());
+        const text = await response.text();
+        console.error('Preorder status fetch failed:', response.status, text);
         return false;
       }
       const data = await response.json();
+      logDebug('Preorder status response', data);
       return data.preorder || false;
     } catch (error) {
       console.error('Error checking preorder status:', error);
@@ -57,6 +67,7 @@
     const buttons = document.querySelectorAll(
       'button[name="add"], button[data-testid*="add-to-cart"], button.add-to-cart-button, button[type="submit"]'
     );
+    logDebug('modifyButtons found buttons', buttons.length);
 
     buttons.forEach(async function(button) {
       if (button.classList.contains('preorder-modified')) return;
@@ -73,7 +84,8 @@
                   button.getAttribute('data-variant-id') ||
                   button.closest('[data-product-id]')?.getAttribute('data-product-id') ||
                   findInputValue('input[name="id"]') ||
-                  findInputValue('input[name="product-id"]');
+                  findInputValue('input[name="product-id"]') ||
+                  findInputValue('input[data-product-id]');
 
       if (!productId) {
         const productData = getShopifyProductData();
@@ -87,10 +99,14 @@
         }
       }
 
+      logDebug('button productId', {button, productId});
+
       if (productId) {
         const isPreorder = await checkPreorderStatus(productId);
         if (isPreorder) {
-          const label = button.querySelector('.add-to-cart-text__content span span') || button;
+          const label = button.querySelector('.add-to-cart-text__content span span') ||
+                        button.querySelector('.add-to-cart-text__content span') ||
+                        button;
           if (label) {
             label.textContent = 'Preorder';
           } else {
@@ -133,6 +149,13 @@
 
   // Run on page load
   document.addEventListener('DOMContentLoaded', function() {
+    logDebug('DOMContentLoaded event');
+    modifyButtons();
+    setTimeout(modifyButtons, 500);
+  });
+
+  window.addEventListener('load', function() {
+    logDebug('window load event');
     modifyButtons();
   });
 
