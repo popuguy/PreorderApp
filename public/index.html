@@ -10,20 +10,70 @@
     <main class="container">
       <h1>Shopify Preorder App</h1>
       <p>Connect your Shopify store to manage preorder listings by adding or removing the <strong>preorder</strong> tag.</p>
-      <form id="shop-form" class="card">
-        <label for="shop">Shop domain</label>
-        <input id="shop" name="shop" placeholder="your-shop.myshopify.com" required />
-        <button type="submit">Connect store</button>
-      </form>
+      <div id="loading">Loading...</div>
+      <div id="login-form" class="card" style="display: none;">
+        <h2>Enter Password</h2>
+        <form id="password-form">
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+          <div class="form-group">
+            <label for="shop">Shop domain</label>
+            <input id="shop" name="shop" placeholder="your-shop.myshopify.com" required />
+          </div>
+          <button type="submit">Connect store</button>
+        </form>
+      </div>
+      <div id="shop-form" class="card" style="display: none;">
+        <form id="direct-form">
+          <label for="shop-direct">Shop domain</label>
+          <input id="shop-direct" name="shop" placeholder="your-shop.myshopify.com" required />
+          <button type="submit">Connect store</button>
+        </form>
+      </div>
       <p class="hint">After installing, you can manage preorder tags from the app dashboard.</p>
     </main>
     <script>
-      document.getElementById("shop-form").addEventListener("submit", (event) => {
+      async function init() {
+        try {
+          const response = await fetch('/api/config');
+          const config = await response.json();
+
+          document.getElementById('loading').style.display = 'none';
+
+          if (config.passwordRequired) {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('password-form').addEventListener('submit', handlePasswordSubmit);
+          } else {
+            document.getElementById('shop-form').style.display = 'block';
+            document.getElementById('direct-form').addEventListener('submit', handleDirectSubmit);
+          }
+        } catch (error) {
+          console.error('Error loading config:', error);
+          // Fallback to direct form
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('shop-form').style.display = 'block';
+          document.getElementById('direct-form').addEventListener('submit', handleDirectSubmit);
+        }
+      }
+
+      function handlePasswordSubmit(event) {
         event.preventDefault();
-        const shop = document.getElementById("shop").value.trim();
+        const password = document.getElementById('password').value.trim();
+        const shop = document.getElementById('shop').value.trim();
+        if (!password || !shop) return;
+        window.location.href = `/api/auth?shop=${encodeURIComponent(shop)}&password=${encodeURIComponent(password)}`;
+      }
+
+      function handleDirectSubmit(event) {
+        event.preventDefault();
+        const shop = document.getElementById('shop-direct').value.trim();
         if (!shop) return;
-        window.location.href = `/auth?shop=${encodeURIComponent(shop)}`;
-      });
+        window.location.href = `/api/auth?shop=${encodeURIComponent(shop)}`;
+      }
+
+      init();
     </script>
   </body>
 </html>

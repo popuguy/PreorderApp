@@ -28,6 +28,28 @@ export default async function handler(req, res) {
     await saveShopToken(shop, tokenResponse.access_token);
     session.shop = shop;
     await session.save();
+
+    // Setup preorder script tag
+    try {
+      const rawHost = process.env.HOST || req.headers['x-forwarded-host'] || req.headers.host;
+      const appOrigin = rawHost
+        ? rawHost.replace(/\/+$/g, "").replace(/^(https?:)?\/\//, "https://")
+        : null;
+
+      if (appOrigin) {
+        await fetch(`${appOrigin}/api/setup-script`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': req.headers.cookie || ''
+          }
+        });
+      }
+    } catch (scriptError) {
+      console.error('Script tag setup failed:', scriptError);
+      // Don't fail auth if script setup fails
+    }
+
     res.writeHead(302, {Location: "/app.html"});
     res.end();
   } catch (error) {

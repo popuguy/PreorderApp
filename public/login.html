@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Preorder App Login</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Preorder App</h1>
+      <div class="card">
+        <h2>Enter Password</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+          <div class="form-group">
+            <label for="shop">Shop Domain:</label>
+            <input type="text" id="shop" name="shop" placeholder="your-shop.myshopify.com" required />
+          </div>
+          <button type="submit" class="button primary">Login</button>
+        </form>
+      </div>
+    </main>
+    <script>
+      document.getElementById('login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const password = document.getElementById('password').value;
+        const shop = document.getElementById('shop').value;
+        window.location.href = `/api/auth?shop=${encodeURIComponent(shop)}&password=${encodeURIComponent(password)}`;
+      });
+    </script>
+  </body>
+</html>

@@ -17,6 +17,15 @@ async function fetchProducts() {
   }
 }
 
+async function ensureScriptTag() {
+  try {
+    await fetch('/api/setup-script', {method: 'POST'});
+    console.log('Preorder storefront script tag ensured.');
+  } catch (error) {
+    console.error('Unable to ensure preorder script tag:', error);
+  }
+}
+
 function renderProducts(products) {
   if (!products || products.length === 0) {
     statusEl.textContent = "No products found in this shop.";
@@ -53,7 +62,7 @@ function renderProducts(products) {
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({preorder})
         });
-        fetchProducts();
+        await fetchProducts();
       } catch (error) {
         console.error(error);
         button.disabled = false;
@@ -64,4 +73,6 @@ function renderProducts(products) {
   });
 }
 
-fetchProducts();
+fetchProducts().then(() => {
+  ensureScriptTag();
+});
