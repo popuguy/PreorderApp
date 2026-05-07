@@ -88,6 +88,11 @@
                   findInputValue('input[data-product-id]');
 
       if (!productId) {
+        const productFormComponent = form?.closest('product-form-component') || document.querySelector('product-form-component[data-product-id]');
+        productId = productFormComponent?.getAttribute('data-product-id') || null;
+      }
+
+      if (!productId) {
         const productData = getShopifyProductData();
         productId = productData.variantId || productData.productId || null;
       }
