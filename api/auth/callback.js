@@ -1,5 +1,5 @@
 import { getSession } from "../../lib/session.js";
-import { normalizeQueryValue, verifyShopifyHmac, exchangeTemporaryCode } from "../../lib/shopify.js";
+import { normalizeQueryValue, verifyShopifyHmac, exchangeTemporaryCode, shopifyRequest } from "../../lib/shopify.js";
 import { saveShopToken } from "../../lib/storage.js";
 
 export default async function handler(req, res) {
@@ -25,11 +25,12 @@ export default async function handler(req, res) {
 
   try {
     const tokenResponse = await exchangeTemporaryCode({shop, code});
-    await saveShopToken(shop, tokenResponse.access_token);
+    const accessToken = tokenResponse.access_token;
+    await saveShopToken(shop, accessToken);
     session.shop = shop;
     await session.save();
 
-    // Setup preorder script tag
+    // Setup preorder script tag directly after auth using the new token
     try {
       const rawHost = process.env.HOST || req.headers['x-forwarded-host'] || req.headers.host;
       const appOrigin = rawHost
@@ -37,16 +38,45 @@ export default async function handler(req, res) {
         : null;
 
       if (appOrigin) {
-        await fetch(`${appOrigin}/api/setup-script`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': req.headers.cookie || ''
-          }
+        const scriptSrc = `${appOrigin}/preorder-script.js?shop=${encodeURIComponent(shop)}`;
+        const existingTagsResponse = await shopifyRequest({
+          shop,
+          accessToken,
+          path: '/script_tags.json'
         });
+
+        const existingTag = existingTagsResponse.script_tags.find((tag) => {
+          return tag.src === scriptSrc || tag.src?.includes('/preorder-script.js');
+        });
+
+        const scriptTagPayload = {
+          script_tag: {
+            event: 'onload',
+            src: scriptSrc,
+            display_scope: 'online_store'
+          }
+        };
+
+        if (existingTag) {
+          await shopifyRequest({
+            shop,
+            accessToken,
+            method: 'PUT',
+            path: `/script_tags/${existingTag.id}.json`,
+            body: scriptTagPayload
+          });
+        } else {
+          await shopifyRequest({
+            shop,
+            accessToken,
+            method: 'POST',
+            path: '/script_tags.json',
+            body: scriptTagPayload
+          });
+        }
       }
     } catch (scriptError) {
-      console.error('Script tag setup failed:', scriptError);
+      console.error('Direct script tag setup failed:', scriptError);
       // Don't fail auth if script setup fails
     }
 
