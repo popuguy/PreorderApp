@@ -36,6 +36,26 @@
     }
   }
 
+  function injectPreorderStyles() {
+    if (document.getElementById('preorder-script-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'preorder-script-styles';
+    style.textContent = `
+      .preorder-candidate {
+        visibility: hidden !important;
+      }
+      .preorder-button {
+        background-color: #ff6b35 !important;
+        border-color: #ff6b35 !important;
+        color: white !important;
+      }
+      .preorder-processed {
+        visibility: visible !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   async function checkPreorderStatus(productId) {
     const appOrigin = await getAppOrigin();
     const shop = getShopFromScript();
@@ -62,15 +82,45 @@
     }
   }
 
+  function showButton(button) {
+    button.classList.remove('preorder-candidate');
+    button.classList.add('preorder-processed');
+    button.style.visibility = '';
+  }
+
+  function setPreorderText(button) {
+    const label = button.querySelector('.add-to-cart-text__content span span') ||
+                  button.querySelector('.add-to-cart-text__content span') ||
+                  button;
+    if (label) {
+      label.textContent = 'Preorder';
+    } else {
+      button.textContent = 'Preorder';
+    }
+    button.classList.add('preorder-button');
+    button.style.backgroundColor = '#ff6b35';
+    button.style.borderColor = '#ff6b35';
+    button.style.color = 'white';
+  }
+
+  function markPending(button) {
+    if (!button.classList.contains('preorder-candidate')) {
+      button.classList.add('preorder-candidate');
+    }
+    button.style.visibility = 'hidden';
+  }
+
   // Function to modify add to cart buttons
   function modifyButtons() {
+    injectPreorderStyles();
+
     const buttons = document.querySelectorAll(
       'button[name="add"], button[data-testid*="add-to-cart"], button.add-to-cart-button, button[type="submit"]'
     );
     logDebug('modifyButtons found buttons', buttons.length);
 
     buttons.forEach(async function(button) {
-      if (button.classList.contains('preorder-modified')) return;
+      if (button.classList.contains('preorder-processed')) return;
 
       const form = button.closest('form');
       let productId = null;
@@ -93,11 +143,6 @@
       }
 
       if (!productId) {
-        const productData = getShopifyProductData();
-        productId = productData.variantId || productData.productId || null;
-      }
-
-      if (!productId) {
         const productMeta = document.querySelector('meta[property="og:product:id"]');
         if (productMeta) {
           productId = productMeta.getAttribute('content');
@@ -106,24 +151,17 @@
 
       logDebug('button productId', {button, productId});
 
-      if (productId) {
-        const isPreorder = await checkPreorderStatus(productId);
-        if (isPreorder) {
-          const label = button.querySelector('.add-to-cart-text__content span span') ||
-                        button.querySelector('.add-to-cart-text__content span') ||
-                        button;
-          if (label) {
-            label.textContent = 'Preorder';
-          } else {
-            button.textContent = 'Preorder';
-          }
-
-          button.classList.add('preorder-button', 'preorder-modified');
-          button.style.backgroundColor = '#ff6b35';
-          button.style.borderColor = '#ff6b35';
-          button.style.color = 'white';
-        }
+      if (!productId) {
+        button.classList.add('preorder-processed');
+        return;
       }
+
+      markPending(button);
+      const isPreorder = await checkPreorderStatus(productId);
+      if (isPreorder) {
+        setPreorderText(button);
+      }
+      showButton(button);
     });
   }
 
