@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     session.shop = shop;
     await session.save();
 
-    // Setup preorder script tag directly after auth using the new token
+    // Setup preorder theme integration
     try {
       const rawHost = process.env.HOST || req.headers['x-forwarded-host'] || req.headers.host;
       const appOrigin = rawHost
@@ -38,46 +38,42 @@ export default async function handler(req, res) {
         : null;
 
       if (appOrigin) {
-        const scriptSrc = `${appOrigin}/preorder-script.js?shop=${encodeURIComponent(shop)}`;
-        const existingTagsResponse = await shopifyRequest({
-          shop,
-          accessToken,
-          path: '/script_tags.json'
-        });
-
-        const existingTag = existingTagsResponse.script_tags.find((tag) => {
-          return tag.src === scriptSrc || tag.src?.includes('/preorder-script.js');
-        });
-
-        const scriptTagPayload = {
-          script_tag: {
-            event: 'onload',
-            src: scriptSrc,
-            display_scope: 'online_store'
+        await fetch(`${appOrigin}/api/modify-theme`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': req.headers.cookie || ''
           }
-        };
+        });
+      }
+    } catch (themeError) {
+      console.error('Theme modification failed:', themeError);
+      // Fall back to script tag approach
+      try {
+        const rawHost = process.env.HOST || req.headers['x-forwarded-host'] || req.headers.host;
+        const appOrigin = rawHost
+          ? rawHost.replace(/\/+$/g, "").replace(/^(https?:)?\/\//, "https://")
+          : null;
 
-        if (existingTag) {
-          await shopifyRequest({
-            shop,
-            accessToken,
-            method: 'PUT',
-            path: `/script_tags/${existingTag.id}.json`,
-            body: scriptTagPayload
-          });
-        } else {
+        if (appOrigin) {
+          const scriptSrc = `${appOrigin}/preorder-script.js?shop=${encodeURIComponent(shop)}`;
           await shopifyRequest({
             shop,
             accessToken,
             method: 'POST',
             path: '/script_tags.json',
-            body: scriptTagPayload
+            body: {
+              script_tag: {
+                event: 'onload',
+                src: scriptSrc,
+                display_scope: 'online_store'
+              }
+            }
           });
         }
+      } catch (scriptError) {
+        console.error('Script tag fallback also failed:', scriptError);
       }
-    } catch (scriptError) {
-      console.error('Direct script tag setup failed:', scriptError);
-      // Don't fail auth if script setup fails
     }
 
     res.writeHead(302, {Location: "/app.html"});
