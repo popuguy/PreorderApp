@@ -29,11 +29,13 @@ export default async function handler(req, res) {
     await session.save();
 
     const callbackUrl = buildCallbackUrl(req);
+    console.log('Generated callbackUrl:', callbackUrl);
     const authUrl = buildShopifyAuthUrl({
       shop,
       redirectUri: callbackUrl,
       state
     });
+    console.log('Generated authUrl:', authUrl);
 
     res.redirect(authUrl);
   } catch (error) {
