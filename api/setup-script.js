@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const scriptSrc = `${appOrigin}/preorder-script.js?shop=${encodeURIComponent(auth.shop)}`;
     const scriptTagData = {
       script_tag: {
-        event: "oninstantload",
+        event: "onload",
         src: scriptSrc,
         display_scope: "online_store"
       }
