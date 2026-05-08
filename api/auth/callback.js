@@ -51,7 +51,7 @@ export default async function handler(req, res) {
 
         const scriptTagPayload = {
           script_tag: {
-            event: 'onload',
+            event: 'oninstantload',
             src: scriptSrc,
             display_scope: 'online_store'
           }
